@@ -61,7 +61,10 @@ public class TableExtractor {
                 curTable = new Table();
             } else {
                 if (curTable.getName() == null) {
-                    curTable.setName(sb.toString());
+                    curTable.setName(sb.toString()
+                            .replace("Driver Safety Staff - ", "")
+                            .replace("States Staff - ", "")
+                    );
                 } else {
                     //System.out.println(sb.toString());
                 }

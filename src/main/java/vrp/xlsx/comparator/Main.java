@@ -39,5 +39,6 @@ public class Main {
         System.out.println("=============== STATE ===========================");
         Map<String, Table> mapState = new TableExtractor()
                 .extract("States Staff.xlsx");
+        TableDifferencePrinter.print(mapDS, mapState);
     }
 }
