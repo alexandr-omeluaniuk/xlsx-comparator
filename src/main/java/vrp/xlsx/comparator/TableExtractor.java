@@ -72,6 +72,7 @@ public class TableExtractor {
                     System.out.println("!!!");
                 } else {
                     curTable.getRows().put(rowName, rowContent);
+                    curTable.getRowsNum().put(rowName, i + 1);
                 }
             }
         }
