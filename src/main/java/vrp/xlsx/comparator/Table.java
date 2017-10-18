@@ -5,12 +5,17 @@
  */
 package vrp.xlsx.comparator;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  *
  * @author ss
  */
 public class Table {
     private String name;
+    private Map<String, List<String>> rows = new HashMap<>();
 
     /**
      * @return the name
@@ -24,5 +29,19 @@ public class Table {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * @return the rows
+     */
+    public Map<String, List<String>> getRows() {
+        return rows;
+    }
+
+    /**
+     * @param rows the rows to set
+     */
+    public void setRows(Map<String, List<String>> rows) {
+        this.rows = rows;
     }
 }
