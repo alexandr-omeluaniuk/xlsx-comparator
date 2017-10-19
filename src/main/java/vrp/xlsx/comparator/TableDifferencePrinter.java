@@ -31,7 +31,7 @@ public class TableDifferencePrinter {
     public static final String ANSI_PURPLE = "\u001B[35m";
     public static final String ANSI_YELLOW = "\u001B[33m";
     
-    public static void print(Map<String, Table> tDS, Map<String, Table> tState) {
+    public static String print(Map<String, Table> tDS, Map<String, Table> tState) {
         for (String sKey : tDS.keySet()) {
             if (!tState.keySet().contains(sKey)) {
                 System.out.println("!!! 'State' file not contains [" + sKey + "] table");
@@ -134,15 +134,7 @@ public class TableDifferencePrinter {
             sb.append("\n");
         }
         System.out.println(sb.toString());
-        try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(new File("/home/ss/Downloads/staff-diff.txt")), "Cp1252"));
-            writer.write(sb.toString().replace(ANSI_PURPLE, "").replace(ANSI_RED, "")
-                    .replace(ANSI_RESET, "").replace(ANSI_YELLOW, ""));
-            writer.close();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        return sb.toString();
     }
     private static List<Object> createRow(String rowName, Table t, String type) {
         List<Object> strArgs = new ArrayList<>();
