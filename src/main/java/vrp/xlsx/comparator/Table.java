@@ -8,6 +8,7 @@ package vrp.xlsx.comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.poi.ss.usermodel.Row;
 
 /**
  *
@@ -17,6 +18,8 @@ public class Table {
     private String name;
     private Map<String, List<String>> rows = new HashMap<>();
     private Map<String, Integer> rowsNum = new HashMap<>();
+    private Map<Integer, Row> originRows = new HashMap<>();
+    private int lastTableNum;
 
     /**
      * @return the name
@@ -58,5 +61,33 @@ public class Table {
      */
     public void setRowsNum(Map<String, Integer> rowsNum) {
         this.rowsNum = rowsNum;
+    }
+
+    /**
+     * @return the originRows
+     */
+    public Map<Integer, Row> getOriginRows() {
+        return originRows;
+    }
+
+    /**
+     * @param originRows the originRows to set
+     */
+    public void setOriginRows(Map<Integer, Row> originRows) {
+        this.originRows = originRows;
+    }
+
+    /**
+     * @return the lastTableNum
+     */
+    public int getLastTableNum() {
+        return lastTableNum;
+    }
+
+    /**
+     * @param lastTableNum the lastTableNum to set
+     */
+    public void setLastTableNum(int lastTableNum) {
+        this.lastTableNum = lastTableNum;
     }
 }

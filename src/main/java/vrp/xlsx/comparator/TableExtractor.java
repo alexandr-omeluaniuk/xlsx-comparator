@@ -21,9 +21,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
  * @author ss
  */
 public class TableExtractor {
-    public Map<String, Table> extract(String resource) throws Exception {
-        Workbook wb = new XSSFWorkbook(Main.class
-                .getResourceAsStream("/" + resource));
+    public Map<String, Table> extract(Workbook wb) throws Exception {
         Sheet sheet = wb.getSheetAt(0);
         System.out.println("Sheet name [" + sheet.getSheetName() + "]");
         int rowNumFirst = sheet.getFirstRowNum();
@@ -36,6 +34,7 @@ public class TableExtractor {
         for (int i = rowNumFirst; i <= rowNumLast; i++) {
             Row row = sheet.getRow(i);
             if (row == null) {
+                curTable.setLastTableNum(i + 1);
                 addTable(curTable, tables);
                 totalTables++;
                 curTable = new Table();
@@ -47,18 +46,21 @@ public class TableExtractor {
             boolean skipRow = false;
             for (int j = 0; j < row.getLastCellNum(); j++) {
                 Cell cell = row.getCell(j);
+                String val;
                 if (cell != null) {
-                    String val = cell.getStringCellValue().trim();
-                    if ("We can download more detail about FLS from Object Permission file.".equals(val.trim())) {
-                        skipRow = true;
-                        break;
-                    }
-                    sb.append(val).append(" :: ");
-                    if (rowName == null) {
-                        rowName = val;
-                    } else {
-                        rowContent.add(val);
-                    }
+                    val = cell.getStringCellValue().trim();
+                } else {
+                    val = "";
+                }
+                if ("We can download more detail about FLS from Object Permission file.".equals(val.trim())) {
+                    skipRow = true;
+                    break;
+                }
+                sb.append(val).append(" :: ");
+                if (rowName == null && !val.trim().isEmpty()) {
+                    rowName = val;
+                } else {
+                    rowContent.add(val);
                 }
             }
             if (skipRow) {
@@ -68,6 +70,7 @@ public class TableExtractor {
                     || (sb.toString().contains("Field Name")
                     && sb.toString().contains("Readable")
                     && sb.toString().contains("Editable"))) {
+                curTable.setLastTableNum(i + 1);
                 addTable(curTable, tables);
                 totalTables++;
                 curTable = new Table();
@@ -92,6 +95,7 @@ public class TableExtractor {
                 } else {
                     curTable.getRows().put(rowName, rowContent);
                     curTable.getRowsNum().put(rowName, i + 1);
+                    curTable.getOriginRows().put(i + 1, row);
                 }
             }
         }

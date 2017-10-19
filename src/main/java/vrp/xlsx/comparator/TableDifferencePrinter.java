@@ -24,7 +24,7 @@ import java.util.TreeMap;
 public class TableDifferencePrinter {
     private static final String T_DS = "DS";
     private static final String T_STATE = "State";
-    private static final int COLS = 9;
+    private static final int COLS = 13;
     
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";

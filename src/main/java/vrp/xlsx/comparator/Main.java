@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Map;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import static vrp.xlsx.comparator.TableDifferencePrinter.ANSI_PURPLE;
 import static vrp.xlsx.comparator.TableDifferencePrinter.ANSI_RED;
 import static vrp.xlsx.comparator.TableDifferencePrinter.ANSI_RESET;
@@ -44,12 +46,16 @@ public class Main {
         System.out.println("STATE FILE [" + state + "]");
         System.out.println("DS FILE [" + ds + "]");
         System.out.println("=============== DS ==============================");
+        XSSFWorkbook wbDS = new XSSFWorkbook(Main.class
+                .getResourceAsStream("/" + ds));
         Map<String, Table> mapDS = new TableExtractor()
-                .extract(ds);
+                .extract(wbDS);
         System.out.println("");
         System.out.println("=============== STATE ===========================");
+        XSSFWorkbook wbState = new XSSFWorkbook(Main.class
+                .getResourceAsStream("/" + state));
         Map<String, Table> mapState = new TableExtractor()
-                .extract(state);
+                .extract(wbState);
         String content = TableDifferencePrinter.print(mapDS, mapState);
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
@@ -59,5 +65,6 @@ public class Main {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+        TableDifferenceExchenger.readChanges(mapDS, mapState, wbState);
     }
 }
