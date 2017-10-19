@@ -7,6 +7,7 @@ package vrp.xlsx.comparator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.poi.ss.usermodel.Cell;
@@ -30,7 +31,7 @@ public class TableExtractor {
         System.out.println("first row number [" + rowNumFirst
                 + "], last row number [" + rowNumLast + "]");
         Integer totalTables = 0;
-        Map<String, Table> tables = new HashMap<>();
+        Map<String, Table> tables = new LinkedHashMap<>();
         Table curTable = new Table();
         for (int i = rowNumFirst; i <= rowNumLast; i++) {
             Row row = sheet.getRow(i);
@@ -43,10 +44,15 @@ public class TableExtractor {
             StringBuilder sb = new StringBuilder();
             List<String> rowContent = new ArrayList<>();
             String rowName = null;
+            boolean skipRow = false;
             for (int j = 0; j < row.getLastCellNum(); j++) {
                 Cell cell = row.getCell(j);
                 if (cell != null) {
                     String val = cell.getStringCellValue().trim();
+                    if ("We can download more detail about FLS from Object Permission file.".equals(val.trim())) {
+                        skipRow = true;
+                        break;
+                    }
                     sb.append(val).append(" :: ");
                     if (rowName == null) {
                         rowName = val;
@@ -55,10 +61,21 @@ public class TableExtractor {
                     }
                 }
             }
-            if (sb.toString().trim().isEmpty()) {
+            if (skipRow) {
+                continue;
+            }
+            if (sb.toString().trim().isEmpty()
+                    || (sb.toString().contains("Field Name")
+                    && sb.toString().contains("Readable")
+                    && sb.toString().contains("Editable"))) {
                 addTable(curTable, tables);
                 totalTables++;
                 curTable = new Table();
+                if (sb.toString().contains("Field Name")
+                    && sb.toString().contains("Readable")
+                    && sb.toString().contains("Editable")) {
+                    curTable.setName(sb.toString());
+                }
             } else {
                 if (curTable.getName() == null) {
                     curTable.setName(sb.toString()

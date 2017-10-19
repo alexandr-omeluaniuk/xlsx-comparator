@@ -44,6 +44,9 @@ public class TableDifferencePrinter {
         }
         // compare tables
         StringBuilder sb = new StringBuilder();
+        StringBuilder html = new StringBuilder();
+        html.append("<style>")
+                .append("table, th, td {border: 1px solid black;}table {width: 100%;border-collapse: collapse;}").append("</style>");
         Set<String> tNames = tDS.keySet();
         StringBuilder formatContent = new StringBuilder("%-7s |");
         formatContent.append("%7s. |");
@@ -55,15 +58,16 @@ public class TableDifferencePrinter {
         for (String tName : tNames) {
             Table tableDS = tDS.get(tName);
             Table tableState = tState.get(tName);
-            sb.append("\t\t").append(tName).append("\n");
             Set<String> rowNames = new HashSet<>();
             rowNames.addAll(tableDS.getRows().keySet());
             rowNames.addAll(tableState.getRows().keySet());
             Map<Integer, String[]> sort = new TreeMap<>();
-            String dsStr, stateStr;
+            String dsStr, stateStr, dsHtml, stateHtml;
             for (String rowName : rowNames) {
                 dsStr = null;
                 stateStr = null;
+                dsHtml = null;
+                stateHtml = null;
                 if (tableDS.getRows().containsKey(rowName)
                         && tableState.getRows().containsKey(rowName)) {
                     // diff for two rows
@@ -74,27 +78,35 @@ public class TableDifferencePrinter {
                                 createRow(rowName, tableDS, T_DS).toArray(new Object[0])) + ANSI_RESET;
                         stateStr = ANSI_PURPLE + String.format(formatContent.toString(),
                                 createRow(rowName, tableState, T_STATE).toArray(new Object[0])) + ANSI_RESET;
+                        dsHtml = createRowHTML(rowName, tableDS, T_DS);
+                        stateHtml = createRowHTML(rowName, tableState, T_STATE);
                     } else {
                         boolean isDiffer = false;
                         List<Object> argDS = new ArrayList<>();
                         List<Object> argState = new ArrayList<>();
+                        List<String> argDSHtml = new ArrayList<>();
+                        List<String> argStateHtml = new ArrayList<>();
                         for (int i = 0; i < dsRow.size(); i++) {
                             String dsCol = dsRow.get(i).trim();
                             String stateCol = stateRow.get(i).trim();
                             if (!dsCol.trim().equals(stateCol.trim())) {
                                 isDiffer = true;
+                                argDSHtml.add("<font style=\"color: orangered;\">" + dsCol + "</font>");
                                 while (dsCol.length() < 10) {
                                     dsCol += " ";
                                 }
                                 dsCol = ANSI_YELLOW + dsCol + ANSI_RESET;
                                 argDS.add(dsCol);
+                                argStateHtml.add("<font style=\"color: orangered;\">" + stateCol + "</font>");
                                 while (stateCol.length() < 10) {
                                     stateCol += " ";
                                 }
                                 stateCol = ANSI_YELLOW + stateCol + ANSI_RESET;
                                 argState.add(stateCol);
                             } else {
+                                argDSHtml.add(dsCol);
                                 argDS.add(dsCol);
+                                argStateHtml.add(stateCol);
                                 argState.add(stateCol);
                             }
                         }
@@ -103,6 +115,8 @@ public class TableDifferencePrinter {
                                     createRow(rowName, tableDS.getRowsNum().get(rowName), argDS, T_DS).toArray(new Object[0]));
                             stateStr = String.format(formatContent.toString(),
                                     createRow(rowName, tableState.getRowsNum().get(rowName), argState, T_STATE).toArray(new Object[0]));
+                            dsHtml = createRowHTML(rowName, tableDS.getRowsNum().get(rowName), argDSHtml, T_DS);
+                            stateHtml = createRowHTML(rowName, tableState.getRowsNum().get(rowName), argStateHtml, T_STATE);
                         }
                     }
                 } else if (!tableDS.getRows().containsKey(rowName)) {
@@ -110,12 +124,16 @@ public class TableDifferencePrinter {
                             createEmptyRow(T_DS).toArray(new Object[0])) + ANSI_RESET;
                     stateStr = String.format(formatContent.toString(),
                             createRow(rowName, tableState, T_STATE).toArray(new Object[0]));
+                    dsHtml = createEmptyRowHTML(T_DS);
+                    stateHtml = createRowHTML(rowName, tableState, T_STATE);
                     
                 } else if (!tableState.getRows().containsKey(rowName)) {
                     dsStr = String.format(formatContent.toString(),
                             createRow(rowName, tableDS, T_DS).toArray(new Object[0]));
                     stateStr = ANSI_RED + String.format(formatContent.toString(),
                             createEmptyRow(T_STATE).toArray(new Object[0])) + ANSI_RESET;
+                    dsHtml = createRowHTML(rowName, tableDS, T_DS);
+                    stateHtml = createEmptyRowHTML(T_STATE);
                 } else {
                     throw new IllegalArgumentException("unreal case!!!");
                 }
@@ -124,17 +142,27 @@ public class TableDifferencePrinter {
                     rowNum = tableState.getRowsNum().get(rowName);
                 }
                 if (dsStr != null && stateStr != null) {
-                    sort.put(rowNum, new String[] {dsStr + "\n", stateStr + "\n"});
+                    sort.put(rowNum, new String[] {dsStr + "\n", stateStr + "\n", dsHtml, stateHtml});
                 }
             }
+            if (sort.isEmpty()) {
+                continue;
+            }
+            sb.append("\t\t").append(tName).append("\n");
+            html.append("<b>").append(tName).append("</b><br/>");
+            html.append("<table cellpadding=\"5\">").append("<tbody>");
             for (Integer key : sort.keySet()) {
                 sb.append(sort.get(key)[0]);
                 sb.append(sort.get(key)[1]);
+                html.append(sort.get(key)[2]);
+                html.append(sort.get(key)[3]);
             }
+            html.append("</tbody>").append("</table>");
             sb.append("\n");
+            html.append("<br/>");
         }
         System.out.println(sb.toString());
-        return sb.toString();
+        return html.toString();
     }
     private static List<Object> createRow(String rowName, Table t, String type) {
         List<Object> strArgs = new ArrayList<>();
@@ -160,6 +188,42 @@ public class TableDifferencePrinter {
         }
         return strArgs;
     }
+    private static String createRowHTML(String rowName, Table t, String type) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<tr>");
+        sb.append("<td style=\"width: 100px\">").append(type).append("</td>");
+        sb.append("<td align=\"right\" style=\"width: 60px\">").append(t.getRowsNum().get(rowName)).append("</td>");
+        sb.append("<td style=\"width: 350px\">").append(rowName).append("</td>");
+        int count = 3;
+        for (String col : t.getRows().get(rowName)) {
+            sb.append("<td style=\"width: 100px\">").append(col).append("</td>");
+            count++;
+        }
+        while (count < COLS) {
+            sb.append("<td style=\"width: 100px\">").append("").append("</td>");
+            count++;
+        }
+        sb.append("</tr>");
+        return sb.toString();
+    }
+    private static String createRowHTML(String rowName, Integer rowNum, List<String> cols, String type) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<tr>");
+        sb.append("<td style=\"width: 100px\">").append(type).append("</td>");
+        sb.append("<td align=\"right\" style=\"width: 60px\">").append(rowNum).append("</td>");
+        sb.append("<td style=\"width: 350px\">").append(rowName).append("</td>");
+        int count = 3;
+        for (String col : cols) {
+            sb.append("<td style=\"width: 100px\">").append(col).append("</td>");
+            count++;
+        }
+        while (count < COLS) {
+            sb.append("<td style=\"width: 100px\">").append("").append("</td>");
+            count++;
+        }
+        sb.append("</tr>");
+        return sb.toString();
+    }
     private static List<Object> createEmptyRow(String type) {
         List<Object> strArgs = new ArrayList<>();
         strArgs.add(type);
@@ -168,5 +232,19 @@ public class TableDifferencePrinter {
             strArgs.add("");
         }
         return strArgs;
+    }
+    private static String createEmptyRowHTML(String type) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<tr style=\"background-color: #ffbfbf;\">");
+        sb.append("<td style=\"width: 100px\">").append(type).append("</td>");
+        sb.append("<td align=\"right\" style=\"width: 60px\">").append("----").append("</td>");
+        sb.append("<td style=\"width: 350px\">").append("----").append("</td>");
+        int count = 3;
+        while (count < COLS) {
+            sb.append("<td style=\"width: 100px\">").append("").append("</td>");
+            count++;
+        }
+        sb.append("</tr>");
+        return sb.toString();
     }
 }

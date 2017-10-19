@@ -53,9 +53,8 @@ public class Main {
         String content = TableDifferencePrinter.print(mapDS, mapState);
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(new File((isStaff ? "staff" : "volunteer") + "-diff.txt")), "Cp1252"));
-            writer.write(content.toString().replace(ANSI_PURPLE, "").replace(ANSI_RED, "")
-                    .replace(ANSI_RESET, "").replace(ANSI_YELLOW, ""));
+                    new FileOutputStream(new File((isStaff ? "staff" : "volunteer") + "-diff.html")), "UTF-8"));
+            writer.write(content);
             writer.close();
         } catch (IOException ex) {
             ex.printStackTrace();
