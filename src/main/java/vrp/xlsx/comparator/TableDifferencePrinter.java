@@ -5,12 +5,17 @@
  */
 package vrp.xlsx.comparator;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -38,104 +43,37 @@ public class TableDifferencePrinter {
             }
         }
         // compare tables
+        StringBuilder sb = new StringBuilder();
         Set<String> tNames = tDS.keySet();
-//        Map<String, List<String>> notFoundDS = new HashMap<>();
-//        Map<String, List<String>> notFoundState = new HashMap<>();
-//        for (String tName : tNames) {
-//            Table sTable = source.get(tName);
-//            Table tTable = target.get(tName);
-//            //System.out.println("");
-//            //System.out.println("************ " + tName);
-//            for (String rowName : sTable.getRows().keySet()) {
-//                if (!tTable.getRows().keySet().contains(rowName)) {
-//                    if (!notFoundState.containsKey(tName)) {
-//                        notFoundState.put(tName, new ArrayList<>());
-//                    }
-//                    notFoundState.get(tName).add(rowName);
-//                    //System.out.println("'State' table, row not found: " + rowName);
-//                }
-//            }
-//            for (String rowName : tTable.getRows().keySet()) {
-//                if (!sTable.getRows().keySet().contains(rowName)) {
-//                    if (!notFoundDS.containsKey(tName)) {
-//                        notFoundDS.put(tName, new ArrayList<>());
-//                    }
-//                    notFoundDS.get(tName).add(rowName);
-//                    //System.out.println("'DS', row not found: " + rowName);
-//                }
-//            }
-//        }
-//        StringBuilder formatContent = new StringBuilder("%7s. |");
-//        formatContent.append("%-40s |");
-//        for (int i = 0; i < 6; i++) {
-//            formatContent.append("%-10s |");
-//        }
-//        System.out.println("#################################################");
-//        System.out.println("'DS' file hasn't rows from 'State' file");
-//        for (String tName : notFoundDS.keySet()) {
-//            System.out.println("");
-//            System.out.println("\t\t" + tName);
-//            for (String rowName : notFoundDS.get(tName)) {
-//                Table t = target.get(tName);
-//                List<Object> strArgs = new ArrayList<>();
-//                strArgs.add(t.getRowsNum().get(rowName));
-//                strArgs.add(rowName);
-//                for (String col : t.getRows().get(rowName)) {
-//                    strArgs.add(col);
-//                }
-//                while (strArgs.size() < 8) {
-//                    strArgs.add("");
-//                }
-//                System.out.println(String.format(formatContent.toString(),
-//                        strArgs.toArray(new Object[0])));
-//            }
-//        }
-//        System.out.println("#################################################");
-//        System.out.println("'State' file hasn't rows from 'DS' file");
-//        for (String tName : notFoundState.keySet()) {
-//            System.out.println("");
-//            System.out.println("\t\t" + tName);
-//            for (String rowName : notFoundState.get(tName)) {
-//                Table t = source.get(tName);
-//                List<Object> strArgs = new ArrayList<>();
-//                strArgs.add(t.getRowsNum().get(rowName));
-//                strArgs.add(rowName);
-//                for (String col : t.getRows().get(rowName)) {
-//                    strArgs.add(col);
-//                }
-//                while (strArgs.size() < 8) {
-//                    strArgs.add("");
-//                }
-//                System.out.println(String.format(formatContent.toString(),
-//                        strArgs.toArray(new Object[0])));
-//            }
-//        }
-        // compare exist
         StringBuilder formatContent = new StringBuilder("%-7s |");
         formatContent.append("%7s. |");
         formatContent.append("%-50s |");
         for (int i = 0; i < 6; i++) {
             formatContent.append("%-10s |");
         }
-        System.out.println("#################################################");
+        sb.append("#################################################\n");
         for (String tName : tNames) {
             Table tableDS = tDS.get(tName);
             Table tableState = tState.get(tName);
-            System.out.println("\t\t" + tName);
+            sb.append("\t\t").append(tName).append("\n");
             Set<String> rowNames = new HashSet<>();
             rowNames.addAll(tableDS.getRows().keySet());
             rowNames.addAll(tableState.getRows().keySet());
+            Map<Integer, String[]> sort = new TreeMap<>();
+            String dsStr, stateStr;
             for (String rowName : rowNames) {
+                dsStr = null;
+                stateStr = null;
                 if (tableDS.getRows().containsKey(rowName)
                         && tableState.getRows().containsKey(rowName)) {
                     // diff for two rows
                     List<String> dsRow = tableDS.getRows().get(rowName);
                     List<String> stateRow = tableState.getRows().get(rowName);
                     if (dsRow.size() != stateRow.size()) {
-                        System.out.println(ANSI_PURPLE + String.format(formatContent.toString(),
-                                createRow(rowName, tableDS, T_DS).toArray(new Object[0])) + ANSI_RESET);
-                        System.out.println(ANSI_PURPLE + String.format(formatContent.toString(),
-                                createRow(rowName, tableState, T_STATE).toArray(new Object[0])) + ANSI_RESET);
+                        dsStr = ANSI_PURPLE + String.format(formatContent.toString(),
+                                createRow(rowName, tableDS, T_DS).toArray(new Object[0])) + ANSI_RESET;
+                        stateStr = ANSI_PURPLE + String.format(formatContent.toString(),
+                                createRow(rowName, tableState, T_STATE).toArray(new Object[0])) + ANSI_RESET;
                     } else {
                         boolean isDiffer = false;
                         List<Object> argDS = new ArrayList<>();
@@ -145,35 +83,65 @@ public class TableDifferencePrinter {
                             String stateCol = stateRow.get(i).trim();
                             if (!dsCol.trim().equals(stateCol.trim())) {
                                 isDiffer = true;
-                                argDS.add(ANSI_YELLOW + dsCol + ANSI_RESET);
-                                argState.add(ANSI_YELLOW + stateCol + ANSI_RESET);
+                                while (dsCol.length() < 10) {
+                                    dsCol += " ";
+                                }
+                                dsCol = ANSI_YELLOW + dsCol + ANSI_RESET;
+                                argDS.add(dsCol);
+                                while (stateCol.length() < 10) {
+                                    stateCol += " ";
+                                }
+                                stateCol = ANSI_YELLOW + stateCol + ANSI_RESET;
+                                argState.add(stateCol);
                             } else {
                                 argDS.add(dsCol);
                                 argState.add(stateCol);
                             }
                         }
                         if (isDiffer) {
-                            System.out.println(String.format(formatContent.toString(),
-                                    createRow(rowName, tableDS.getRowsNum().get(rowName), argDS, T_DS).toArray(new Object[0])));
-                            System.out.println(String.format(formatContent.toString(),
-                                    createRow(rowName, tableState.getRowsNum().get(rowName), argState, T_STATE).toArray(new Object[0])));
+                            dsStr = String.format(formatContent.toString(),
+                                    createRow(rowName, tableDS.getRowsNum().get(rowName), argDS, T_DS).toArray(new Object[0]));
+                            stateStr = String.format(formatContent.toString(),
+                                    createRow(rowName, tableState.getRowsNum().get(rowName), argState, T_STATE).toArray(new Object[0]));
                         }
                     }
                 } else if (!tableDS.getRows().containsKey(rowName)) {
-                    System.out.println(ANSI_RED + String.format(formatContent.toString(),
-                            createEmptyRow(T_DS).toArray(new Object[0])) + ANSI_RESET);
-                    System.out.println(String.format(formatContent.toString(),
-                            createRow(rowName, tableState, T_STATE).toArray(new Object[0])));
+                    dsStr = ANSI_RED + String.format(formatContent.toString(),
+                            createEmptyRow(T_DS).toArray(new Object[0])) + ANSI_RESET;
+                    stateStr = String.format(formatContent.toString(),
+                            createRow(rowName, tableState, T_STATE).toArray(new Object[0]));
                     
                 } else if (!tableState.getRows().containsKey(rowName)) {
-                    System.out.println(String.format(formatContent.toString(),
-                            createRow(rowName, tableDS, T_DS).toArray(new Object[0])));
-                    System.out.println(ANSI_RED + String.format(formatContent.toString(),
-                            createEmptyRow(T_STATE).toArray(new Object[0])) + ANSI_RESET);
+                    dsStr = String.format(formatContent.toString(),
+                            createRow(rowName, tableDS, T_DS).toArray(new Object[0]));
+                    stateStr = ANSI_RED + String.format(formatContent.toString(),
+                            createEmptyRow(T_STATE).toArray(new Object[0])) + ANSI_RESET;
+                } else {
+                    throw new IllegalArgumentException("unreal case!!!");
+                }
+                Integer rowNum = tableDS.getRowsNum().get(rowName);
+                if (rowNum == null) {
+                    rowNum = tableState.getRowsNum().get(rowName);
+                }
+                if (dsStr != null && stateStr != null) {
+                    sort.put(rowNum, new String[] {dsStr + "\n", stateStr + "\n"});
                 }
             }
-            System.out.println("");
-            System.out.println("");
+            for (Integer key : sort.keySet()) {
+                sb.append(sort.get(key)[0]);
+                sb.append(sort.get(key)[1]);
+            }
+            sb.append("\n");
+        }
+        System.out.println(sb.toString());
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(new File("/home/ss/Downloads/staff-diff.txt")), "Cp1252"));
+            writer.write(sb.toString().replace(ANSI_PURPLE, "").replace(ANSI_RED, "")
+                    .replace(ANSI_RESET, "").replace(ANSI_YELLOW, ""));
+            writer.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
     private static List<Object> createRow(String rowName, Table t, String type) {
@@ -203,7 +171,7 @@ public class TableDifferencePrinter {
     private static List<Object> createEmptyRow(String type) {
         List<Object> strArgs = new ArrayList<>();
         strArgs.add(type);
-        strArgs.add("X");
+        strArgs.add("----");
         while (strArgs.size() < COLS) {
             strArgs.add("");
         }

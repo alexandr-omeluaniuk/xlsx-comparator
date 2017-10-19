@@ -43,10 +43,15 @@ public class TableExtractor {
             StringBuilder sb = new StringBuilder();
             List<String> rowContent = new ArrayList<>();
             String rowName = null;
+            boolean skipRow = false;
             for (int j = 0; j < row.getLastCellNum(); j++) {
                 Cell cell = row.getCell(j);
                 if (cell != null) {
                     String val = cell.getStringCellValue().trim();
+                    if ("We can download more detail about FLS from Object Permission file.".equals(val.trim())) {
+                        skipRow = true;
+                        break;
+                    }
                     sb.append(val).append(" :: ");
                     if (rowName == null) {
                         rowName = val;
@@ -54,6 +59,9 @@ public class TableExtractor {
                         rowContent.add(val);
                     }
                 }
+            }
+            if (skipRow) {
+                continue;
             }
             if (sb.toString().trim().isEmpty()) {
                 addTable(curTable, tables);
